@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ArturV19/file-storage/internal/dto"
 	"github.com/ArturV19/file-storage/internal/storage"
 	"github.com/ArturV19/file-storage/internal/types"
 )
@@ -18,10 +19,7 @@ func (a *API) authenticateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	var req struct {
-		Login    string `json:"login"`
-		Password string `json:"password"`
-	}
+	var req dto.AuthenticateUserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -62,8 +60,8 @@ func (a *API) authenticateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := map[string]interface{}{
-		"token": token,
+	resp := dto.AuthenticateUserResponse{
+		Token: token,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {

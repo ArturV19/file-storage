@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ArturV19/file-storage/internal/dto"
 	"github.com/ArturV19/file-storage/internal/storage"
 )
 
@@ -17,10 +18,7 @@ func (a *API) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	var req struct {
-		Login    string `json:"login"`
-		Password string `json:"password"`
-	}
+	var req dto.CreateUserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -50,11 +48,11 @@ func (a *API) createUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := map[string]interface{}{
-		"id":     userID,
-		"status": "created",
+	resp := dto.CreateUserResponse{
+		ID: userID,
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}

@@ -39,8 +39,8 @@ func New(httpCfg config.HTTPConfig, assetStorage assetStorage, userStorage userS
 	mux.HandleFunc("/api/users/create", newAPI.createUserHandler)
 	mux.HandleFunc("/api/auth", newAPI.authenticateUserHandler)
 	mux.HandleFunc("/api/upload-asset/", newAPI.UploadAssetHandler)
-	mux.HandleFunc("/api/asset/", newAPI.AssetHandler)
-	mux.HandleFunc("/api/list-assets", newAPI.GetUserAssetsListHandler)
+	mux.HandleFunc("/api/asset/", newAPI.assetHandler)
+	mux.HandleFunc("/api/list-assets", newAPI.getUserAssetsListHandler)
 
 	newAPI.httpServer = &http.Server{
 		Addr:    net.JoinHostPort(httpCfg.Host, httpCfg.Port),

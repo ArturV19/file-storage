@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"log"
 )
@@ -32,7 +33,7 @@ func (s *Storage) CreateUser(ctx context.Context, login, password string) (int64
 	var newUserID int64
 	err = tx.QueryRow(ctx, "INSERT INTO users (login, password_hash) VALUES ($1, $2) RETURNING id", login, passwordHash).Scan(&newUserID)
 	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UniqueViolation {
 			return -1, ErrUserAlreadyExists
 		}
 		return -1, err

@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"errors"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"io"
 
 	"github.com/ArturV19/file-storage/internal/types"
@@ -17,17 +19,11 @@ func (s *Storage) UploadAsset(ctx context.Context, uploadAssetData types.UploadA
 		return err
 	}
 
-	var exists bool
-	err = s.db.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM assets WHERE name = $1 AND uid = $2)", uploadAssetData.AssetName, uploadAssetData.UserID).Scan(&exists)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return ErrAssetAlreadyExists
-	}
-
 	_, err = s.db.Exec(ctx, "INSERT INTO assets (name, original_name, uid, data, content_type) VALUES ($1, $2, $3, $4, $5)", uploadAssetData.AssetName, uploadAssetData.OriginalName, uploadAssetData.UserID, data, uploadAssetData.ContentType)
 	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UniqueViolation {
+			return ErrAssetAlreadyExists
+		}
 		return err
 	}
 
@@ -68,18 +64,14 @@ func (s *Storage) GetUserAssetsList(ctx context.Context, userID int64, limit, of
 }
 
 func (s *Storage) DeleteAsset(ctx context.Context, userID int64, assetName string) error {
-	var exists bool
-	err := s.db.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM assets WHERE name = $1 AND uid = $2)", assetName, userID).Scan(&exists)
+	result, err := s.db.Exec(ctx, "DELETE FROM assets WHERE name = $1 AND uid = $2", assetName, userID)
 	if err != nil {
 		return err
-	}
-	if !exists {
-		return ErrAssetNotFound
 	}
 
-	_, err = s.db.Exec(ctx, "DELETE FROM assets WHERE name = $1 AND uid = $2", assetName, userID)
-	if err != nil {
-		return err
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return ErrAssetNotFound
 	}
 
 	return nil
