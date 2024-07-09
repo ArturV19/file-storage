@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 
 	"github.com/ArturV19/file-storage/internal/types"
@@ -39,8 +38,6 @@ func (s *Storage) GetAsset(ctx context.Context, userID int64, assetName string) 
 	var data []byte
 	var originalName, contentType string
 	err := s.db.QueryRow(ctx, "SELECT data, original_name, content_type FROM assets WHERE name = $1 AND uid = $2", assetName, userID).Scan(&data, &originalName, &contentType)
-
-	fmt.Println(originalName) // ->
 
 	if err != nil {
 		return nil, "", "", err
