@@ -26,7 +26,7 @@ func (s *Storage) NewSession(ctx context.Context, authData types.AuthData) (stri
 	defer func() {
 		if err != nil {
 			if errRollback := tx.Rollback(ctx); errRollback != nil && errRollback != pgx.ErrTxClosed {
-				fmt.Printf("storage.AuthenticateUser tx.Rollback error: %v", errRollback)
+				fmt.Printf("storage.NewSession tx.Rollback error: %v", errRollback)
 			}
 		}
 	}()
@@ -35,8 +35,20 @@ func (s *Storage) NewSession(ctx context.Context, authData types.AuthData) (stri
 	err = tx.QueryRow(ctx, "SELECT id FROM users WHERE login = $1 AND password_hash = $2", authData.Login, hashPassword(authData.Password)).Scan(&userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", errors.New("invalid login/password")
+			return "", ErrInvalidLoginPassword
 		}
+		return "", err
+	}
+
+	var token string
+	err = tx.QueryRow(ctx, "SELECT id FROM sessions WHERE uid = $1 AND expires_at > now()", userID).Scan(&token)
+	if err == nil {
+		if errCommit := tx.Commit(ctx); errCommit != nil {
+			return "", errCommit
+		}
+		return token, nil
+	}
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return "", err
 	}
 
@@ -45,7 +57,7 @@ func (s *Storage) NewSession(ctx context.Context, authData types.AuthData) (stri
 		return "", err
 	}
 
-	token, err := generateToken()
+	token, err = generateToken()
 	if err != nil {
 		return "", err
 	}
