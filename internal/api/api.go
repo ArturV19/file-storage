@@ -35,6 +35,7 @@ func New(httpCfg config.HTTPConfig, assetStorage assetStorage, userStorage userS
 		userStorage:  userStorage,
 	}
 
+	// Hande functions
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/users/create", newAPI.createUserHandler)
 	mux.HandleFunc("/api/auth", newAPI.authenticateUserHandler)
